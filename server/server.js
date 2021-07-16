@@ -21,6 +21,14 @@ function randomValue(min = 0, max = 1, precision = 0) {
   return random.toFixed(precision);
 }
 
+function randomSign(value) {
+  if(Math.random()<0.5){
+    return value
+  } else {
+    return -value;
+  }
+}
+
 function utcDate() {
   const now = new Date();
   return new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours(), now.getUTCMinutes(), now.getUTCSeconds());
@@ -32,7 +40,7 @@ function getQuotes(socket) {
     ticker,
     exchange: 'NASDAQ',
     price: randomValue(100, 300, 2),
-    change: randomValue(0, 200, 2),
+    change: randomSign(randomValue(0, 200, 2)),
     change_percent: randomValue(0, 1, 2),
     dividend: randomValue(0, 1, 2),
     yield: randomValue(0, 2, 2),
@@ -42,16 +50,16 @@ function getQuotes(socket) {
   socket.emit('ticker', quotes);
 }
 
-function trackTickers(socket) {
+function trackTickers(socket,interval) {
   // run the first time immediately
   getQuotes(socket);
 
   // every N seconds
   const timer = setInterval(function() {
     getQuotes(socket);
-  }, FETCH_INTERVAL);
+  }, interval);
 
-  socket.on('disconnect', function() {
+  socket.on('clear', function() {
     clearInterval(timer);
   });
 }
@@ -71,8 +79,8 @@ app.get('/', function(req, res) {
 });
 
 socketServer.on('connection', (socket) => {
-  socket.on('start', () => {
-    trackTickers(socket);
+  socket.on('start', (interval) => {
+    trackTickers(socket,interval);
   });
 });
 
